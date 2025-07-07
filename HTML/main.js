@@ -19,7 +19,11 @@ const themeToggle = document.getElementById('theme-toggle');
 const sunIcon = document.getElementById('theme-icon-sun');
 const moonIcon = document.getElementById('theme-icon-moon');
 const summarizeBtn = document.getElementById('summarize-btn');
+const featureBtn = document.getElementById('feature-btn');
+const popupOverlay = document.getElementById('popup-overlay');
+const closePopupBtn = document.getElementById('close-popup-btn');
 const imageGenBtn = document.getElementById('image-gen-btn');
+
 
 let pyodide = null;
 let isPyodideLoading = false;
@@ -421,7 +425,7 @@ async function summarizeChat() {
         return;
     }
     const historyText = chatHistory.map(item => `${item.role}: ${item.parts[0].text}`).join('\n');
-    const prompt = `Please provide a concise summary of the following conversation:\n\n${historyText}`;
+    const prompt = `Please provide a concise summary of the following conversation,try to provide the result in best format i.e bullet points or numbering:\n\n${historyText}`;
     openPreview('summary', 'Summarizing...');
     const result = await callGeminiAPI({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
     const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate summary.";
@@ -653,3 +657,28 @@ promptForm.addEventListener('submit', async (e) => {
         responseOutput.appendChild(errorContainer);
     }
 });
+
+//function to show the popup for the feature button
+function showPopup() {
+    popupOverlay.classList.remove('hidden'); // 'hidden' class ko hata do
+}
+
+//function to hide the popup button for the feature btn
+function hidePopup() {
+    popupOverlay.classList.add('hidden'); // 'hidden' class ko wapas laga do
+}
+
+// event listner for the feature btn
+featureBtn.addEventListener('click', showPopup);
+
+closePopupBtn.addEventListener('click', hidePopup);
+
+// jab user black background pe click kre, tb bhi popup band ho jaaye.
+popupOverlay.addEventListener('click', function(event) {
+    // Yeh check karta hai ki click overlay par hua hai, na ki popup box ke andar
+
+    if (event.target === popupOverlay) {
+        hidePopup();
+    }
+});
+
