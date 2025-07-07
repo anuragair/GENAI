@@ -1,0 +1,184 @@
+:root {
+    --bg-primary: rgba(223, 101, 154, 0.142);
+    --bg-secondary: #282c34;
+    --bg-tertiary: #1e1f20;
+    --bg-prompt-bar: #282c34;
+    --text-primary: #e8eaed;
+    --text-secondary: #a9aaad;
+    --border-color: #4a5568;
+    --action-btn-bg: #4a5568;
+    --action-btn-hover-bg: #5f6368;
+    --suggestion-chip-bg: #282c34;
+    --suggestion-chip-hover-bg: #3c4043;
+}
+
+body.light-mode {
+    --bg-primary: #a7c0fc91;
+    --bg-secondary: #f1f3f4;
+    --bg-tertiary: #e8eaed;
+    --bg-prompt-bar: #E7E8D1;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --border-color: #000000;
+    --action-btn-bg: #33466350;
+    --action-btn-hover-bg:  #E3867D;
+    --suggestion-chip-bg: #c1e1c7;
+    --suggestion-chip-hover-bg: #6e9fe9;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* --- Animations --- */
+.fade-in-down {
+    animation: fadeInDown 0.6s ease-out forwards;
+}
+.fade-out-up {
+    animation: fadeOutUp 0.6s ease-in forwards;
+}
+.fade-in {
+    animation: fadeIn 0.6s ease-in-out forwards;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOutUp {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.loader {
+    border: 4px solid var(--border-color);
+    border-top: 4px solid #8ab4f8;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Gradient Text for Name --- */
+.name-gradient {
+    background: -webkit-linear-gradient(45deg, #c287f9, #8ab4f8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* --- Custom Styles for Chat History --- */
+.user-prompt-container{
+    /* border-style: solid; */
+    /* border-bottom-color: black; */
+} .ai-response-container {
+    margin-bottom: 1.5rem;
+    border-style:solid;
+    border-color: blue;
+    border-width: 1px;
+    border-radius: 0.5rem;
+}
+.user-prompt-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+.ai-response-container .response-content {
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 0.5rem;
+}
+.tool-call-info {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    padding-left: 1rem;
+    /* border-left: 2px solid var(--border-color); */
+}
+
+/* --- Custom Styles for Rendered Markdown --- */
+.response-content h1, .response-content h2, .response-content h3 {
+    font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem;
+}
+.response-content h1 { font-size: 1.875rem; }
+.response-content h2 { font-size: 1.5rem; }
+.response-content h3 { font-size: 1.25rem; }
+.response-content table {
+    width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem;
+}
+.response-content th, .response-content td {
+    border: 1px solid var(--border-color); padding: 0.75rem; text-align: left;
+}
+.response-content th { background-color: var(--bg-secondary); font-weight: 600; }
+.response-content tr:nth-child(even) { background-color: var(--bg-tertiary); }
+.response-content pre {
+    position: relative; background-color: var(--bg-tertiary); border-radius: 0.5rem; margin-top: 1rem; margin-bottom: 1rem; overflow-x: auto;
+}
+.response-content pre code.hljs { padding: 1rem; display: block; background-color: transparent; }
+.response-content a { color: #8ab4f8; text-decoration: underline; }
+.response-content ul, .response-content ol { margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.response-content li { margin-bottom: 0.25rem; }
+
+/* --- Styles for the Action Buttons --- */
+.code-actions {
+    position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s ease-in-out;
+}
+pre:hover .code-actions { opacity: 1; }
+.action-btn {
+    background-color: var(--action-btn-bg); color: var(--text-primary); border: solid;border-width: 1px; padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer;
+}
+.action-btn:hover { background-color: var(--action-btn-hover-bg); }
+.action-btn:disabled { background-color: var(--action-btn-hover-bg); cursor: not-allowed; }
+
+/* --- Main App Container Styles --- */
+#app-container {
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--bg-primary);
+}
+#main-content-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center content vertically */
+    width: 100%;
+    max-width: 48rem; /* Equivalent to max-w-3xl for readability */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Preview Modal Styles (will be applied to dynamic elements) --- */
+.preview-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.preview-container {
+    width: 80%; height: 80%; background-color: var(--bg-secondary); border-radius: 0.5rem; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden;
+}
+.preview-header {
+    padding: 0.75rem 1.5rem; background-color: var(--bg-primary); display: flex; justify-content: space-between; align-items: center; border-style: solid var(--border-color);border-top-left-radius: 0.5rem;border-top-right-radius: 0.5rem;
+}
+.preview-body {
+     background-color:#e3867d37 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.preview-iframe {
+    width: 100%; height: 100%; border: none; background-color: #fff; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;
+}
+.preview-terminal, .preview-summary {
+    width: 100%; height: 100%; background-color:var(--bg-tertiary); color:var(--text-primary); font-family: 'Courier New', Courier, monospace; padding: 1rem; overflow-y: auto; white-space: pre-wrap; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;
+}
+.preview-image {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+}
