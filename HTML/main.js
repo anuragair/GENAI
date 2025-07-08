@@ -22,7 +22,6 @@ const summarizeBtn = document.getElementById('summarize-btn');
 const featureBtn = document.getElementById('feature-btn');
 const popupOverlay = document.getElementById('popup-overlay');
 const closePopupBtn = document.getElementById('close-popup-btn');
-const imageGenBtn = document.getElementById('image-gen-btn');
 
 
 let pyodide = null;
@@ -336,7 +335,6 @@ function detectLanguageStyle(text) {
     }
     return 'English'; // Default to English
 }
-//function for fetching the weather API
 // --- Function to generate and display random suggestion chips ---
 function displayRandomSuggestions() {
     suggestionChipsContainer.innerHTML = ''; // Clear existing chips
@@ -357,53 +355,7 @@ function displayRandomSuggestions() {
         suggestionChipsContainer.appendChild(chip);
     });
 }
-
-// --- Weather Fetching Function (AccuWeather) ---
-async function getWeather(city) {
-    // IMPORTANT: Replace with your own free API key from AccuWeather
-    const apiKey = 'KYNEZGbI8PxFGEBMSAP3Xhgl6kGLPUcP'; 
-    if (apiKey === 'KYNEZGbI8PxFGEBMSAP3Xhgl6kGLPUcP') {
-        return "Weather API key is not set. Please add your AccuWeather API key in script.js";
-    }
-    
-    const locationUrl = `http://dataservice.accuweather.com/locations/v1/cities/search?apikey=${apiKey}&q=${city}`;
-
-    try {
-        // Step 1: Get the location key for the city
-        const locationResponse = await fetch(locationUrl);
-        if (!locationResponse.ok) {
-            throw new Error('Failed to find location.');
-        }
-        const locationData = await locationResponse.json();
-        if (!locationData || locationData.length === 0) {
-            return `Sorry, I couldn't find the location for ${city}.`;
-        }
-        const locationKey = locationData[0].Key;
-
-        // Step 2: Get the current weather using the location key
-        const weatherUrl = `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${apiKey}&details=true`;
-        const weatherResponse = await fetch(weatherUrl);
-        if (!weatherResponse.ok) {
-            throw new Error('Failed to fetch weather data.');
-        }
-        const weatherData = await weatherResponse.json();
-        if (!weatherData || weatherData.length === 0) {
-            return `Sorry, could not get current conditions for ${city}.`;
-        }
-        
-        const data = weatherData[0];
-        const temp = data.Temperature.Metric.Value;
-        const description = data.WeatherText;
-        const humidity = data.RelativeHumidity;
-        const wind = data.Wind.Speed.Metric.Value;
-        
-        return `The current weather in ${city} is ${description} with a temperature of ${temp}°C. The humidity is ${humidity}% and the wind speed is ${wind} km/h.`;
-
-    } catch (error) {
-        console.error("Weather fetch error:", error);
-        return `Sorry, there was an error fetching the weather for ${city}.`;
-    }
-}
+//removed weather fetching function temporary.
 
 // --- Gemini API Call Function ---
 async function callGeminiAPI(payload) {
@@ -431,39 +383,9 @@ async function summarizeChat() {
     const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate summary.";
     openPreview('summary', summary);
 }
+//image generation function(removes image generation function)
 
-async function generateImage(prompt) {
-    if (!prompt) {
-        openPreview('terminal', "Bhai, image banane ke liye kuch likho to sahi!");
-        return;
-    }
-    openPreview('image', '[https://placehold.co/512x512/282c34/a9aaad?text=Generating](https://placehold.co/512x512/282c34/a9aaad?text=Generating)...');
-    const payload = { instances: [{ prompt: prompt }], parameters: { "sampleCount": 1 } };
-    const apiKey = "";
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-    
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        const dynamicModal = document.getElementById('dynamic-preview-modal');
-        if (result.predictions?.[0]?.bytesBase64Encoded) {
-            const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-            if(dynamicModal) dynamicModal.querySelector('.preview-image').src = imageUrl;
-        } else {
-            throw new Error(result.error?.message || "No image data in response.");
-        }
-    } catch (error) {
-        console.error("Image generation error:", error);
-        const dynamicModal = document.getElementById('dynamic-preview-modal');
-        if(dynamicModal) dynamicModal.remove();
-        openPreview('terminal', `Error generating image: ${error.message}`);
-    }
-}
-
+//explain code function for explain code button
 async function explainCode(code) {
     const prompt = `Please explain the following code snippet line by line in a simple way:\n\n\`\`\`\n${code}\n\`\`\``;
     openPreview('explanation', 'Explaining code...');
@@ -471,10 +393,9 @@ async function explainCode(code) {
     const explanation = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate explanation.";
     openPreview('explanation', explanation);
 }
-
-// --- Event Listeners ---
+//function for summarize code.(button)
 summarizeBtn.addEventListener('click', summarizeChat);
-imageGenBtn.addEventListener('click', () => generateImage(promptInput.value));
+// imageGenBtn.addEventListener('click', () => generateImage(promptInput.value));
 stopBtn.addEventListener('click', () => {
     if (typingInterval) {
         clearInterval(typingInterval);
@@ -658,27 +579,30 @@ promptForm.addEventListener('submit', async (e) => {
     }
 });
 
-//function to show the popup for the feature button
-function showPopup() {
-    popupOverlay.classList.remove('hidden'); // 'hidden' class ko hata do
-}
-
-//function to hide the popup button for the feature btn
-function hidePopup() {
-    popupOverlay.classList.add('hidden'); // 'hidden' class ko wapas laga do
-}
-
-// event listner for the feature btn
-featureBtn.addEventListener('click', showPopup);
-
-closePopupBtn.addEventListener('click', hidePopup);
-
-// jab user black background pe click kre, tb bhi popup band ho jaaye.
-popupOverlay.addEventListener('click', function(event) {
-    // Yeh check karta hai ki click overlay par hua hai, na ki popup box ke andar
-
-    if (event.target === popupOverlay) {
-        hidePopup();
+// Ensure popup event listeners are attached after DOM is loaded
+window.addEventListener('DOMContentLoaded', function() {
+    const popupOverlay = document.getElementById('popup-overlay');
+    const closePopupBtn = document.getElementById('close-popup-btn');
+    const featureBtn = document.getElementById('feature-btn');
+    // Always hide popup on load
+    if (popupOverlay) popupOverlay.classList.add('hidden');
+    if (closePopupBtn) closePopupBtn.addEventListener('click', hidePopup);
+    if (popupOverlay) {
+        popupOverlay.addEventListener('click', function(event) {
+            if (event.target === popupOverlay) {
+                hidePopup();
+            }
+        });
     }
+    if (featureBtn) featureBtn.addEventListener('click', function() { window.showPopup(); });
+    // Redefine showPopup/hidePopup to use the local popupOverlay
+    window.showPopup = function() {
+        popupOverlay.classList.remove('hidden');
+    };
+    window.hidePopup = function() {
+        popupOverlay.classList.add('hidden');
+    };
 });
+
+
 
