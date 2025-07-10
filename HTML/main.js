@@ -23,7 +23,6 @@ const featureBtn = document.getElementById('feature-btn');
 const popupOverlay = document.getElementById('popup-overlay');
 const closePopupBtn = document.getElementById('close-popup-btn');
 
-
 let pyodide = null;
 let isPyodideLoading = false;
 
@@ -74,18 +73,20 @@ function openPreview(type, content) {
     modal.id = 'dynamic-preview-modal';
     
     let bodyContent = '';
+    const title = type.charAt(0).toUpperCase() + type.slice(1);
+
     if (type === 'html') {
         bodyContent = `<iframe class="preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>`;
     } else if (type === 'terminal' || type === 'summary' || type === 'explanation') {
         bodyContent = `<pre class="preview-terminal"></pre>`;
     } else if (type === 'image') {
-        bodyContent = `<img class="preview-image" />`;
+        bodyContent = `<img class="preview-image" alt="Generated plot"/>`;
     }
     
     modal.innerHTML = `
         <div class="preview-container">
             <div class="preview-header">
-                <h3 class="text-lg font-semibold">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
+                <h3 class="text-lg font-semibold">${title}</h3>
                 <button class="action-btn close-preview-btn">Close</button>
             </div>
             <div class="preview-body">${bodyContent}</div>
@@ -128,6 +129,7 @@ async function runPythonCode(code, runButton) {
             await initializePyodide();
         }
         
+        runButton.textContent = 'Loading...';
         const importRegex = /^(?:from\s+(\w+)|import\s+(\w+))/gm;
         const packages = new Set();
         let match;
@@ -136,7 +138,6 @@ async function runPythonCode(code, runButton) {
         }
 
         if (packages.size > 0) {
-            runButton.textContent = 'Loading...';
             await pyodide.loadPackage([...packages]);
         }
         
@@ -162,9 +163,12 @@ async function runPythonCode(code, runButton) {
         if (isMatplotlibUsed) {
              const image_b64 = await pyodide.runPythonAsync(`
                 buf = io.BytesIO()
-                plt.savefig(buf, format='png')
-                buf.seek(0)
-                base64.b64encode(buf.read()).decode('utf-8')
+                if plt.get_fignums(): # Check if a figure exists
+                    plt.savefig(buf, format='png')
+                    buf.seek(0)
+                    base64.b64encode(buf.read()).decode('utf-8')
+                else:
+                    ""
             `);
             if (image_b64) {
                 openPreview('image', 'data:image/png;base64,' + image_b64);
@@ -188,11 +192,9 @@ async function runPythonCode(code, runButton) {
 function processCodeBlocks(container) {
     container.querySelectorAll('pre').forEach(preElement => {
         const codeElement = preElement.querySelector('code');
-        if (!codeElement) return;
+        if (!codeElement || preElement.querySelector('.code-actions')) return;
 
         hljs.highlightElement(codeElement);
-        
-        if (preElement.querySelector('.code-actions')) return; 
         
         const actionsContainer = document.createElement('div');
         actionsContainer.className = 'code-actions';
@@ -201,20 +203,14 @@ function processCodeBlocks(container) {
         copyButton.className = 'action-btn';
         copyButton.textContent = 'Copy';
         copyButton.addEventListener('click', () => {
-            const codeToCopy = codeElement.innerText;
-            const textArea = document.createElement('textarea');
-            textArea.value = codeToCopy;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
+            navigator.clipboard.writeText(codeElement.innerText).then(() => {
                 copyButton.textContent = 'Copied!';
-            } catch (err) {
+                setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
+            }).catch(err => {
                 console.error('Failed to copy text: ', err);
                 copyButton.textContent = 'Error';
-            }
-            document.body.removeChild(textArea);
-            setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
+                setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
+            });
         });
         actionsContainer.appendChild(copyButton);
 
@@ -250,6 +246,7 @@ function processCodeBlocks(container) {
 function typeResponse(text, container) {
     let i = 0;
     let currentText = "";
+    clearInterval(typingInterval); // Clear any existing interval
     typingInterval = setInterval(() => {
         if (i < text.length) {
             currentText += text.charAt(i);
@@ -267,7 +264,7 @@ function typeResponse(text, container) {
                 initializePyodide();
             }
         }
-    }, 1);
+    }, 10); // Adjusted interval for better performance
 }
 
 // --- Function to display user's prompt in the chat ---
@@ -280,6 +277,7 @@ function displayUserPrompt(prompt) {
     promptHeader.textContent = currentUserName;
     
     const promptContent = document.createElement('div');
+    promptContent.className = 'user-prompt-content';
     promptContent.textContent = prompt;
     
     promptContainer.appendChild(promptHeader);
@@ -291,7 +289,7 @@ function displayUserPrompt(prompt) {
 function displayRandomSuggestions() {
     suggestionChipsContainer.innerHTML = ''; // Clear existing chips
     const shuffled = [...allSuggestions].sort(() => 0.5 - Math.random());
-    const randomSuggestions = shuffled.slice(0, 3);
+    const randomSuggestions = shuffled.slice(0, 4); // Show 4 suggestions
 
     randomSuggestions.forEach(suggestionText => {
         const chip = document.createElement('button');
@@ -325,84 +323,98 @@ function googleSearch(query) {
 
 // --- Language Style Detection ---
 function detectLanguageStyle(text) {
-    const hinglishWords = ['bhai', 'kya', 'hai', 'kaise', 'kab', 'kyun', 'aur', 'toh', 'ekdum', 'mast'];
+    const hinglishWords = ['bhai', 'kya', 'hai', 'kaise', 'kab', 'kyun', 'aur', 'toh', 'ekdum', 'mast', 'naam'];
     const words = text.toLowerCase().split(/\s+/);
     const hasHinglish = words.some(word => hinglishWords.includes(word));
-    const hasEnglish = words.some(word => word.length > 3 && !hinglishWords.includes(word)); // Simple check for English words
+    // A simple check for non-Hinglish, likely English words
+    const hasEnglish = words.some(word => word.length > 3 && !hinglishWords.includes(word));
     
-    if (hasHinglish && hasEnglish) {
-        return 'Hinglish';
-    }
+    if (hasHinglish && hasEnglish) return 'Hinglish';
+    if (hasHinglish && !hasEnglish) return 'Hinglish';
     return 'English'; // Default to English
 }
-// --- Function to generate and display random suggestion chips ---
-function displayRandomSuggestions() {
-    suggestionChipsContainer.innerHTML = ''; // Clear existing chips
-    const shuffled = [...allSuggestions].sort(() => 0.5 - Math.random());
-    const randomSuggestions = shuffled.slice(0, 3);
 
-    randomSuggestions.forEach(suggestionText => {
-        const chip = document.createElement('button');
-        chip.className = 'suggestion-chip px-4 py-2 rounded-full transition';
-        chip.style.backgroundColor = 'var(--suggestion-chip-bg)';
-        chip.style.border = '1px solid var(--border-color)';
-        chip.style.color = 'var(--text-primary)';
-        chip.textContent = suggestionText;
-        chip.addEventListener('click', () => {
-            promptInput.value = chip.textContent;
-            promptForm.dispatchEvent(new Event('submit', { cancelable: true }));
-        });
-        suggestionChipsContainer.appendChild(chip);
-    });
+// --- Placeholder for Weather Function ---
+// This function prevents the app from crashing. 
+// For real functionality, you would implement a weather API call here.
+async function getWeather(city) {
+    console.log(`Simulating weather fetch for: ${city}`);
+    return `The weather feature is currently for demonstration. Real-time weather for ${city} is not available.`;
 }
-//removed weather fetching function temporary.
 
 // --- Gemini API Call Function ---
+// --- Gemini API Call Function ---
 async function callGeminiAPI(payload) {
-    const apiKey = "AIzaSyDNmcvVY8fub1RFPTvSvc8tYHgWAOVozZA";
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // IMPORTANT: Replace with your actual Google Gemini API key.
+    // It is STRONGLY recommended to use a backend proxy for production to keep your key secure.
+    const apiKey = "AIzaSyDNmcvVY8fub1RFPTvSvc8tYHgWAOVozZA"; // Your key here
+
+    // The API key should NOT be in the URL. It goes in the headers.
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            // Add the API key to the request headers
+            'X-goog-api-key': apiKey
+        },
         body: JSON.stringify(payload)
     });
-    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        // Provide a more specific error message if available
+        const message = errorData.error?.message || response.statusText;
+        throw new Error(`API request failed: ${message}`);
+    }
     return await response.json();
 }
-
 // --- ✨ New Gemini Features ---
 async function summarizeChat() {
-    if (chatHistory.length === 0) {
-        openPreview('summary', 'Chat history is empty.');
+    if (chatHistory.length < 2) { // Need at least one user prompt and one model response
+        openPreview('summary', 'There is not enough conversation to summarize yet.');
         return;
     }
-    const historyText = chatHistory.map(item => `${item.role}: ${item.parts[0].text}`).join('\n');
-    const prompt = `Please provide a concise summary of the following conversation,try to provide the result in best format i.e bullet points or numbering:\n\n${historyText}`;
     openPreview('summary', 'Summarizing...');
-    const result = await callGeminiAPI({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
-    const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate summary.";
-    openPreview('summary', summary);
+    const historyText = chatHistory.map(item => `${item.role === 'user' ? currentUserName : 'GenAI'}: ${item.parts[0].text}`).join('\n');
+    const prompt = `Please provide a concise summary of the following conversation. Format the result using bullet points or numbered lists for clarity:\n\n${historyText}`;
+    
+    try {
+        const result = await callGeminiAPI({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
+        const summary = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate summary.";
+        openPreview('summary', summary);
+    } catch (error) {
+        openPreview('summary', `Error: ${error.message}`);
+    }
 }
-//image generation function(removes image generation function)
 
-//explain code function for explain code button
 async function explainCode(code) {
-    const prompt = `Please explain the following code snippet line by line in a simple way:\n\n\`\`\`\n${code}\n\`\`\``;
     openPreview('explanation', 'Explaining code...');
-    const result = await callGeminiAPI({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
-    const explanation = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate explanation.";
-    openPreview('explanation', explanation);
+    const prompt = `Please explain the following code snippet line by line in a simple way:\n\n\`\`\`\n${code}\n\`\`\``;
+    try {
+        const result = await callGeminiAPI({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
+        const explanation = result.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate explanation.";
+        openPreview('explanation', explanation);
+    } catch (error) {
+        openPreview('explanation', `Error: ${error.message}`);
+    }
 }
-//function for summarize code.(button)
+
+//--- Event Listeners ---
+
 summarizeBtn.addEventListener('click', summarizeChat);
-// imageGenBtn.addEventListener('click', () => generateImage(promptInput.value));
+
 stopBtn.addEventListener('click', () => {
     if (typingInterval) {
         clearInterval(typingInterval);
         loaderContainer.classList.add('hidden');
-        // Process any fully formed code blocks after stopping
+        // Finalize the partially typed response
         const lastResponseContent = responseOutput.querySelector('.ai-response-container:last-child .response-content');
         if (lastResponseContent) {
+            const fullText = chatHistory[chatHistory.length - 1].parts[0].text;
+            lastResponseContent.innerHTML = marked.parse(fullText);
             processCodeBlocks(lastResponseContent);
         }
     }
@@ -437,7 +449,6 @@ promptForm.addEventListener('submit', async (e) => {
 
     welcomeView.classList.add('hidden');
     responseView.classList.remove('hidden');
-    mainContentArea.style.justifyContent = 'flex-start';
     
     displayUserPrompt(userPrompt);
     
@@ -445,104 +456,90 @@ promptForm.addEventListener('submit', async (e) => {
     mainContentArea.scrollTop = mainContentArea.scrollHeight;
 
     // --- AI Name intent detection ---
-    const aiNameKeywords = [
-        'name','naam',
-        'who are you',
-        'what is your name',
-        'tell me your name',
-        'apka naam',
-        'tumhara naam',
-        'tuhara naam',
-        'aapka naam',
-        'naam kya hai'
-    ];
+    const aiNameKeywords = ['name', 'naam', 'who are you', 'what is your name', 'tell me your name', 'apka naam', 'tumhara naam', 'tuhara naam', 'aapka naam', 'naam kya hai'];
     const isAiNameQuery = aiNameKeywords.some(keyword => userPrompt.toLowerCase().includes(keyword));
     if (isAiNameQuery) {
-        const aiNameResponse = 'GENAI is my name and I am developed by Anurag, and currently I am under the development phase.';
+        const aiNameResponse = 'My name is GenAI. I was developed by Anurag and am currently in the development phase.';
         const aiResponseContainer = document.createElement('div');
         aiResponseContainer.className = 'ai-response-container';
         const responseContent = document.createElement('div');
         responseContent.className = 'response-content';
-        responseContent.textContent = aiNameResponse;
         aiResponseContainer.appendChild(responseContent);
         responseOutput.appendChild(aiResponseContainer);
-        loaderContainer.classList.add('hidden');
-        mainContentArea.scrollTop = mainContentArea.scrollHeight;
+        typeResponse(aiNameResponse, responseContent); // Use typeResponse for consistency
         return;
     }
 
-    // --- Weather intent detection and fetch ---
+    chatHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+    
+    // --- Tool Use Simulation Logic ---
     let toolResult = null;
+    let toolInfoMessage = '';
+
     const weatherKeywords = ['weather', 'mausam', 'tapman', 'temperature'];
     const isWeatherQuery = weatherKeywords.some(keyword => userPrompt.toLowerCase().includes(keyword));
 
     if (isWeatherQuery) {
-        const analysisPrompt = `Extract the city name from the following prompt. Respond with only the city name, or "N/A" if no city is found. Prompt: "${userPrompt}"`;
+        const analysisPrompt = `Extract the city name from this prompt. Respond with only the city name, or "N/A". Prompt: "${userPrompt}"`;
         try {
             const analysisResult = await callGeminiAPI({ contents: [{ role: "user", parts: [{ text: analysisPrompt }] }] });
             const city = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text.trim();
 
             if (city && city !== "N/A") {
-                const toolInfoDiv = document.createElement('div');
-                toolInfoDiv.className = 'tool-call-info';
-                toolInfoDiv.textContent = `Fetching weather for ${city}...`;
-                responseOutput.appendChild(toolInfoDiv);
-                mainContentArea.scrollTop = mainContentArea.scrollHeight;
+                toolInfoMessage = `Simulating weather fetch for ${city}...`;
                 toolResult = await getWeather(city);
             }
         } catch (error) {
             console.error("Weather tool logic failed:", error);
+            // Don't block the chat if tool fails
+        }
+    } else {
+        const analysisPrompt = `Does this prompt require real-time information (like current time, date, or news)? Answer with a concise Google search query if yes, otherwise answer "NO_TOOL_NEEDED". Prompt: "${userPrompt}"`;
+        try {
+            const analysisResult = await callGeminiAPI({ contents: [{ role: "user", parts: [{ text: analysisPrompt }] }] });
+            const toolQuery = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text.trim();
+
+            if (toolQuery && toolQuery !== "NO_TOOL_NEEDED") {
+                toolInfoMessage = `Simulating search for: "${toolQuery}"...`;
+                toolResult = googleSearch(toolQuery);
+            }
+        } catch (error) {
+            console.error("Tool analysis failed:", error);
         }
     }
 
-    chatHistory.push({ role: "user", parts: [{ text: userPrompt }] });
-    if (toolResult) {
-         chatHistory.push({ role: "model", parts: [{ text: `[Function Call Result: ${toolResult}]` }] });
+    if (toolInfoMessage) {
+        const toolInfoDiv = document.createElement('div');
+        toolInfoDiv.className = 'tool-call-info';
+        toolInfoDiv.textContent = toolInfoMessage;
+        responseOutput.appendChild(toolInfoDiv);
+        mainContentArea.scrollTop = mainContentArea.scrollHeight;
     }
-
-    const analysisPrompt = `Does the following user prompt require real-time information (like current time, date, or news)? Answer with a concise Google search query if yes, otherwise answer "NO_TOOL_NEEDED". Prompt: "${userPrompt}"`;
-    
-    let searchResultInfo = null;
-    
-    try {
-        const analysisResult = await callGeminiAPI({ contents: [{ role: "user", parts: [{ text: analysisPrompt }] }] });
-        const toolQuery = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text.trim();
-
-        if (toolQuery && toolQuery !== "NO_TOOL_NEEDED") {
-            const toolInfoDiv = document.createElement('div');
-            toolInfoDiv.className = 'tool-call-info';
-            toolInfoDiv.textContent = `Searching for: "${toolQuery}"...`;
-            responseOutput.appendChild(toolInfoDiv);
-            mainContentArea.scrollTop = mainContentArea.scrollHeight;
-            searchResultInfo = googleSearch(toolQuery);
-        }
-    } catch (error) {
-        console.error("Tool analysis failed:", error);
-    }
-    
-    if (searchResultInfo) {
-         chatHistory.push({ role: "model", parts: [{ text: `[Function Call: Searching for "${userPrompt}"]` }] });
-         chatHistory.push({ role: "user", parts: [{ text: `[Tool Output: ${searchResultInfo}]` }] });
+     if (toolResult) {
+         // Providing tool output back to the model for a grounded response
+         chatHistory.push({ role: "user", parts: [{ text: `[Tool Output: ${toolResult}]` }] });
     }
 
     // --- Smart System Instruction ---
     const languageStyle = detectLanguageStyle(userPrompt);
-    let systemInstruction = `Format your entire response using Markdown. Use tables for tabular data,use bullet points and numbering for the definition of any question, headings for titles, and specify the language for code blocks (e.g., \`\`\`python).`;
+    let systemInstruction = `You are GenAI. Format your entire response using Markdown. Use tables for tabular data, bullet points, and numbered lists. Use headings for titles. Specify the language for code blocks (e.g., \`\`\`python).`;
+    
     if (languageStyle === 'Hinglish') {
-        systemInstruction = `Your primary task is to mirror the user's language style and tone precisely. The user is communicating in Hinglish (a mix of Hindi and English), so you must respond in the same mixed-language style. Do not default to a pure language. ${systemInstruction}`;
+        systemInstruction += ` You MUST respond in Hinglish (a mix of Hindi and English) because the user is communicating in that style. Mirror their language and tone.`;
     } else {
-         systemInstruction = `Respond to the user in clear and professional English. ${systemInstruction}`;
+         systemInstruction += ` Respond clearly in professional English.`;
     }
     
-    if (searchResultInfo) {
-        systemInstruction += ` If you are provided with tool output in the history, use that information to directly answer the user's question without mentioning the tool or the information source.`;
+    if (toolResult) {
+        systemInstruction += ` You have been provided with Tool Output. Use this information to directly answer the user's question. Do NOT mention the tool or the process of getting the information. Just give the answer.`;
     }
 
     const payload = { 
-        contents: [
-            ...chatHistory,
-            { role: "user", parts: [{ text: `${systemInstruction} The user's latest prompt is: "${userPrompt}"` }] }
-        ]
+        contents: chatHistory,
+        system_instruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }]
+        }
     };
 
     try {
@@ -555,54 +552,39 @@ promptForm.addEventListener('submit', async (e) => {
 
             const aiResponseContainer = document.createElement('div');
             aiResponseContainer.className = 'ai-response-container';
-            
             const responseContent = document.createElement('div');
             responseContent.className = 'response-content';
-            
             aiResponseContainer.appendChild(responseContent);
             responseOutput.appendChild(aiResponseContainer);
 
             typeResponse(generatedText, responseContent);
         } else {
-            loaderContainer.classList.add('hidden');
-            const errorContainer = document.createElement('div');
-            errorContainer.innerHTML = '<p>Sorry, I could not generate a response. Please try again.</p>';
-            responseOutput.appendChild(errorContainer);
+            throw new Error("Received an empty response from the API.");
         }
 
     } catch (error) {
         console.error('Error calling Gemini API:', error);
         loaderContainer.classList.add('hidden');
         const errorContainer = document.createElement('div');
-        errorContainer.innerHTML = `<p>An error occurred: ${error.message}. Please check the console for details.</p>`;
+        errorContainer.className = 'ai-response-container response-content';
+        errorContainer.innerHTML = `<p>An error occurred: ${error.message}. Please check your API key and network connection.</p>`;
         responseOutput.appendChild(errorContainer);
     }
 });
 
-// Ensure popup event listeners are attached after DOM is loaded
-window.addEventListener('DOMContentLoaded', function() {
-    const popupOverlay = document.getElementById('popup-overlay');
-    const closePopupBtn = document.getElementById('close-popup-btn');
-    const featureBtn = document.getElementById('feature-btn');
-    // Always hide popup on load
+// Popup logic
+function showPopup() {
+    if (popupOverlay) popupOverlay.classList.remove('hidden');
+}
+function hidePopup() {
     if (popupOverlay) popupOverlay.classList.add('hidden');
-    if (closePopupBtn) closePopupBtn.addEventListener('click', hidePopup);
-    if (popupOverlay) {
-        popupOverlay.addEventListener('click', function(event) {
-            if (event.target === popupOverlay) {
-                hidePopup();
-            }
-        });
-    }
-    if (featureBtn) featureBtn.addEventListener('click', function() { window.showPopup(); });
-    // Redefine showPopup/hidePopup to use the local popupOverlay
-    window.showPopup = function() {
-        popupOverlay.classList.remove('hidden');
-    };
-    window.hidePopup = function() {
-        popupOverlay.classList.add('hidden');
-    };
-});
-
-
-
+}
+if (featureBtn) featureBtn.addEventListener('click', showPopup);
+if (closePopupBtn) closePopupBtn.addEventListener('click', hidePopup);
+if (popupOverlay) {
+    popupOverlay.addEventListener('click', function(event) {
+        if (event.target === popupOverlay) {
+            hidePopup();
+        }
+    });
+}
