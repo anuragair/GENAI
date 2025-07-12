@@ -48,13 +48,12 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0; /* Set a base z-index for the background */
+    z-index: 0;
 }
 
-/* Ensure name section content is on top of the Vanta background */
 #name-section-container {
-    position: relative; /* This is needed to apply z-index */
-    z-index: 1; /* Place content above the background */
+    position: relative;
+    z-index: 1;
 }
 
 /* --- Animations --- */
@@ -62,22 +61,14 @@ body {
 @keyframes fadeOutUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* --- Staggered Entry Animation --- */
 @keyframes slideUpFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-up {
     animation: slideUpFadeIn 0.6s ease-out forwards;
-    opacity: 0; /* Start as invisible before animation begins */
+    opacity: 0;
 }
-
 
 .fade-in-down { animation: fadeInDown 0.6s ease-out forwards; }
 .fade-out-up { animation: fadeOutUp 0.6s ease-in forwards; }
@@ -95,16 +86,23 @@ body {
 
 /* --- Animated Input Field --- */
 .animated-input {
-    /* Smooths all transitions for border, shadow, and transform */
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .animated-input:focus {
-    /* Adds the pop-up effect */
     transform: translateY(-3px);
-    /* Enhances the glow effect. The ring-blue-500 class will still add its color. */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* --- Pulsing Button Animation --- */
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+.pulse-button {
+  animation: pulse 2s infinite;
+  animation-delay: 1.5s;
+}
 
 /* --- Gradient Text for Name --- */
 .name-gradient {
@@ -114,42 +112,28 @@ body {
 }
 
 /* --- Chat History Styles --- */
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .user-prompt-container, .ai-response-container {
     margin-bottom: 1.5rem;
     max-width: 100%;
+    animation: message-in 0.4s ease-out;
 }
-.user-prompt-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-.user-prompt-header {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-    padding-right: 1rem;
-}
-.user-prompt-content {
-    background-color: var(--accent-color);
-    color: var(--bg-primary);
-    padding: 0.75rem 1rem;
-    border-radius: 1rem 1rem 0 1rem;
-    max-width: 85%;
-}
-.ai-response-container .response-content {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 1rem 1rem 1rem 0;
-    max-width: 85%;
-}
-.tool-call-info {
-    font-style: italic;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin: 1rem 0;
-    padding-left: 1rem;
-    border-left: 2px solid var(--border-color);
-}
+.user-prompt-container { display: flex; flex-direction: column; align-items: flex-end; }
+.user-prompt-header { font-weight: 600; margin-bottom: 0.25rem; padding-right: 1rem; }
+.user-prompt-content { background-color: var(--accent-color); color: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 1rem 1rem 0 1rem; max-width: 85%; }
+.ai-response-container .response-content { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 1rem 1rem 1rem 0; max-width: 85%; }
+.tool-call-info { font-style: italic; color: var(--text-secondary); font-size: 0.875rem; margin: 1rem 0; padding-left: 1rem; border-left: 2px solid var(--border-color); }
+
+/* --- AI Typing Indicator --- */
+.typing-indicator { display: flex; align-items: center; padding: 10px; }
+.typing-indicator span { height: 8px; width: 8px; background-color: var(--text-secondary); border-radius: 50%; display: inline-block; margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both; }
+.typing-indicator span:nth-of-type(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-of-type(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
 
 /* --- Rendered Markdown Styles --- */
 .response-content { padding: 0.5rem 1rem; }
@@ -175,32 +159,30 @@ pre:hover .code-actions { opacity: 1; }
 .suggestion-chip:hover { background-color: var(--suggestion-chip-hover-bg) !important; }
 
 /* --- Main App Container Styles --- */
-#app-container { flex-direction: column; width: 100%; height: 100vh; background-color: var(--bg-primary); }
+#app-container {
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--bg-primary);
+    background-image: url('network-background.png');
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
 #main-content-area { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; width: 100%; max-width: 48rem; margin-left: auto; margin-right: auto; }
 
+/* --- Custom Scrollbar for Main Chat Area --- */
+#main-content-area::-webkit-scrollbar { width: 8px; }
+#main-content-area::-webkit-scrollbar-track { background: transparent; }
+#main-content-area::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 20px; border: 2px solid var(--bg-primary); }
+#main-content-area::-webkit-scrollbar-thumb:hover { background-color: #5f6368; }
+
+
 /* --- Feature Popup Styles (CORRECTED) --- */
-#popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 100;
-    transition: opacity 0.3s ease-in-out;
-    /* The display:flex property is now handled by the JS logic below */
-}
-
-/* THIS IS THE KEY FIX: These two rules control the visibility and layout */
-#popup-overlay.hidden {
-    display: none;
-}
-#popup-overlay:not(.hidden) {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
+#popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 100; transition: opacity 0.3s ease-in-out; }
+#popup-overlay.hidden { display: none; }
+#popup-overlay:not(.hidden) { display: flex; justify-content: center; align-items: center; }
 #feature-popup { background-color: var(--bg-secondary); color: var(--text-primary); padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); text-align: center; z-index: 101; }
 #close-popup-btn { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 500; transition: background-color 0.2s; }
 #close-popup-btn:hover { background-color: #c0392b; }
