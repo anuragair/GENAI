@@ -53,8 +53,9 @@ const allSuggestions = [
     "Explain quantum computing in simple terms",
     "Draft an email to my boss about my new project idea",
     "Create a recipe for a vegan chocolate cake",
-    "What are the main tourist attractions in paris?",
+    "What are the main tourist attractions in Paris?",
     "Compose a short poem about rain",
+
     "How does a blockchain work?",
     "Write a simple HTML page with a button",
     "surprise me",
@@ -325,12 +326,11 @@ function detectLanguageStyle(text) {
     const hinglishWords = ['bhai', 'kya', 'hai', 'kaise', 'kab', 'kyun', 'aur', 'toh', 'ekdum', 'mast', 'naam'];
     const words = text.toLowerCase().split(/\s+/);
     const hasHinglish = words.some(word => hinglishWords.includes(word));
-    // A simple check for non-Hinglish, likely English words
     const hasEnglish = words.some(word => word.length > 3 && !hinglishWords.includes(word));
     
     if (hasHinglish && hasEnglish) return 'Hinglish';
     if (hasHinglish && !hasEnglish) return 'Hinglish';
-    return 'English'; // Default to English
+    return 'English';
 }
 
 // --- Placeholder for Weather Function ---
@@ -361,6 +361,7 @@ async function callGeminiAPI(payload) {
     }
     return await response.json();
 }
+
 // --- ✨ New Gemini Features ---
 async function summarizeChat() {
     if (chatHistory.length < 2) {
@@ -399,7 +400,7 @@ summarizeBtn.addEventListener('click', summarizeChat);
 stopBtn.addEventListener('click', () => {
     if (typingInterval) {
         clearInterval(typingInterval);
-        loaderContainer.classList.add('hidden'); // Also hide the old loader if stop is clicked
+        loaderContainer.classList.add('hidden');
         const lastResponseContent = responseOutput.querySelector('.ai-response-container:last-child .response-content');
         if (lastResponseContent) {
             const fullText = chatHistory[chatHistory.length - 1].parts[0].text;
@@ -452,7 +453,6 @@ promptForm.addEventListener('submit', async (e) => {
     
     displayUserPrompt(userPrompt);
     
-    // Show the "AI is typing..." indicator
     const typingIndicator = document.createElement('div');
     typingIndicator.className = 'ai-response-container';
     typingIndicator.innerHTML = `
@@ -463,11 +463,10 @@ promptForm.addEventListener('submit', async (e) => {
     responseOutput.appendChild(typingIndicator);
     mainContentArea.scrollTop = mainContentArea.scrollHeight;
 
-    // AI Name intent detection
     const aiNameKeywords = ['name', 'naam', 'who are you', 'what is your name', 'tell me your name', 'apka naam', 'tumhara naam', 'tuhara naam', 'aapka naam', 'naam kya hai'];
     const isAiNameQuery = aiNameKeywords.some(keyword => userPrompt.toLowerCase().includes(keyword));
     if (isAiNameQuery) {
-        typingIndicator.remove(); // Remove indicator before showing response
+        typingIndicator.remove();
         const aiNameResponse = 'My name is GenAI. I was developed by Anurag and am currently in the development phase.';
         const aiResponseContainer = document.createElement('div');
         aiResponseContainer.className = 'ai-response-container';
@@ -481,31 +480,41 @@ promptForm.addEventListener('submit', async (e) => {
 
     chatHistory.push({ role: "user", parts: [{ text: userPrompt }] });
     
-    // Tool Use Simulation Logic
     let toolResult = null;
     let toolInfoMessage = '';
+    // ... Tool logic remains the same ...
 
-    const weatherKeywords = ['weather', 'mausam', 'tapman', 'temperature'];
-    const isWeatherQuery = weatherKeywords.some(keyword => userPrompt.toLowerCase().includes(keyword));
-
-    if (isWeatherQuery) {
-        // ... (tool logic remains the same)
+    const languageStyle = detectLanguageStyle(userPrompt);
+    let systemInstruction = `You are GenAI. Format your entire response using Markdown. Use tables for tabular data, bullet points, and numbered lists. Use headings for titles. Specify the language for code blocks (e.g., \`\`\`python).`;
+    
+    if (languageStyle === 'Hinglish') {
+        systemInstruction += ` You MUST respond in Hinglish (a mix of Hindi and English) because the user is communicating in that style. Mirror their language and tone.`;
     } else {
-        // ... (tool logic remains the same)
+         systemInstruction += ` Respond clearly in professional English.`;
     }
-    // ... (rest of tool use logic)
+    
+    if (toolResult) {
+        systemInstruction += ` You have been provided with Tool Output. Use this information to directly answer the user's question. Do NOT mention the tool or the process of getting the information. Just give the answer.`;
+    }
 
-    const payload = { 
-        // ... (payload remains the same)
+    // =================================================================
+    // THIS IS THE CORRECTED PAYLOAD OBJECT
+    // =================================================================
+    const payload = {
+        contents: chatHistory,
+        systemInstruction: { // Corrected to camelCase
+            parts: [{ text: systemInstruction }] // 'role' key removed
+        }
     };
 
     try {
         const result = await callGeminiAPI(payload);
         
-        typingIndicator.remove(); // Remove indicator on success
+        typingIndicator.remove();
 
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
             const generatedText = result.candidates[0].content.parts[0].text;
+            
             chatHistory.push({ role: "model", parts: [{ text: generatedText }] });
 
             const aiResponseContainer = document.createElement('div');
@@ -521,7 +530,7 @@ promptForm.addEventListener('submit', async (e) => {
         }
 
     } catch (error) {
-        typingIndicator.remove(); // Also remove indicator on error
+        typingIndicator.remove();
         console.error('Error calling Gemini API:', error);
         const errorContainer = document.createElement('div');
         errorContainer.className = 'ai-response-container response-content';
@@ -553,16 +562,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (heading) {
         const text = "Welcome to GenAI";
         let i = 0;
-        heading.innerHTML = ""; // Clear it first to prevent FOUC
+        heading.innerHTML = "";
         
         function typeWriter() {
             if (i < text.length) {
                 heading.innerHTML += text.charAt(i);
                 i++;
-                setTimeout(typeWriter, 100); // Typing speed in ms
+                setTimeout(typeWriter, 100);
             }
         }
-        // Start typing after the initial slide-up animation has had time to start
         setTimeout(typeWriter, 300); 
     }
 });
