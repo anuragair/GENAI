@@ -1,3 +1,4 @@
+const landingBackground = document.getElementById('landing-background');
 const nameSectionContainer = document.getElementById('name-section-container');
 const appContainer = document.getElementById('app-container');
 const nameForm = document.getElementById('name-form');
@@ -347,7 +348,7 @@ async function getWeather(city) {
 async function callGeminiAPI(payload) {
     // IMPORTANT: Replace with your actual Google Gemini API key.
     // It is STRONGLY recommended to use a backend proxy for production to keep your key secure.
-    const apiKey = "AIzaSyDNmcvVY8fub1RFPTvSvc8tYHgWAOVozZA"; // Your key here
+    const apiKey = "AIzaSyCplw7uw_qNk5YfY53WFYWFV4uS_7MNg6A"; // Your key here
 
     // The API key should NOT be in the URL. It goes in the headers.
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
@@ -430,6 +431,19 @@ nameForm.addEventListener('submit', (e) => {
         displayRandomSuggestions();
         
         nameSectionContainer.classList.add('fade-out-up');
+
+        // Hide and destroy the Vanta.js background for performance
+        if (landingBackground) {
+            landingBackground.style.transition = 'opacity 0.5s ease-out';
+            landingBackground.style.opacity = '0';
+            // Wait for fade out to complete before destroying the effect
+            setTimeout(() => {
+                if (landingBackground) landingBackground.style.display = 'none';
+                if (window.vantaEffect) {
+                    window.vantaEffect.destroy();
+                }
+            }, 500);
+        }
 
         setTimeout(() => {
             nameSectionContainer.classList.add('hidden');

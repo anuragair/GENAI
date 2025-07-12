@@ -41,6 +41,22 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* --- Vanta.js Background --- */
+#landing-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Set a base z-index for the background */
+}
+
+/* Ensure name section content is on top of the Vanta background */
+#name-section-container {
+    position: relative; /* This is needed to apply z-index */
+    z-index: 1; /* Place content above the background */
+}
+
 /* --- Animations --- */
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeOutUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
