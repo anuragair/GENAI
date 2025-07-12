@@ -62,6 +62,23 @@ body {
 @keyframes fadeOutUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* --- Staggered Entry Animation --- */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.animate-slide-up {
+    animation: slideUpFadeIn 0.6s ease-out forwards;
+    opacity: 0; /* Start as invisible before animation begins */
+}
+
+
 .fade-in-down { animation: fadeInDown 0.6s ease-out forwards; }
 .fade-out-up { animation: fadeOutUp 0.6s ease-in forwards; }
 .fade-in { animation: fadeIn 0.6s ease-in-out forwards; }
@@ -75,6 +92,19 @@ body {
     animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* --- Animated Input Field --- */
+.animated-input {
+    /* Smooths all transitions for border, shadow, and transform */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.animated-input:focus {
+    /* Adds the pop-up effect */
+    transform: translateY(-3px);
+    /* Enhances the glow effect. The ring-blue-500 class will still add its color. */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 
 /* --- Gradient Text for Name --- */
 .name-gradient {
